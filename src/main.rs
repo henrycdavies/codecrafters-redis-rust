@@ -27,22 +27,34 @@ fn main() {
 
 fn handle_stream(mut stream: TcpStream) {
     let mut buf = [0; 512];
-    stream.read(&mut buf).unwrap();
+    
+    let mut conn_open = true;
 
-    let first_byte = &buf[0..1][0];
-    let parts = std::str::from_utf8(&buf).unwrap().split(CRLF).collect::<Vec<&str>>();
-    for part in &parts {
-        println!("{}", part);
+    while conn_open {
+        match stream.read(&mut buf) {
+            Ok(_) => {
+                let first_byte = &buf[0..1][0];
+                let parts = std::str::from_utf8(&buf).unwrap().split(CRLF).collect::<Vec<&str>>();
+                for part in &parts {
+                    println!("{}", part);
+                }
+                let response = match first_byte {
+                    b'*' => RESPArray::get_response(&parts),
+                    _ => "UNIMPLEMENTED"
+                };
+                if response == "UNIMPLEMENTED" {
+                    println!("UNIMPLEMENTED");
+                    return;
+                }
+                stream.write_all(response.as_bytes());
+
+            },
+            Err(_) => {
+                conn_open = false;
+            }
+        }
+    
     }
-    let response = match first_byte {
-        b'*' => RESPArray::get_response(&parts),
-        _ => "UNIMPLEMENTED"
-    };
-    if response == "UNIMPLEMENTED" {
-        println!("UNIMPLEMENTED");
-        return;
-    }
-    stream.write_all(response.as_bytes());
 }
 
 
