@@ -1,25 +1,39 @@
 use crate::{resp::RESPDataType, util::validate_lengths};
 
-pub struct RESPCommand;
+pub struct RESPCommand<'a> {
+    command: String,
+    args: Vec<&'a str>
+}
 
-impl RESPCommand {
-    fn ping<'a>(args: &[&str]) -> &'a str {
-        "+PONG\r\n"
+impl<'a> RESPCommand<'a> {
+    fn ping(args: &[&str]) -> String {
+        "+PONG\r\n".to_string()
     }
 
-    fn command<'a>() -> &'a str {
-        "UNIMPLEMENTED"
+    fn echo(args: &[&str]) -> String {
+        let to_echo = args[1];
+        let len = to_echo.len();
+        format!("${}\r\n{}\r\n", len, to_echo)
+    }
+
+    fn command() -> String {
+        "UNIMPLEMENTED".to_string()
     }
 }
 
-impl RESPDataType for RESPCommand {
-    fn get_response<'a>(parts: &[&str]) -> &'a str {
+impl<'a> RESPDataType<'a> for RESPCommand<'a> {
+    fn from_str_array(parts: &'a [&'a str]) -> RESPCommand<'a> {
         validate_lengths(parts[0], parts[1].len());
         let command = parts[1].trim().to_uppercase();
-        match command.as_str() {
-            "PING" => Self::ping(&parts[2..]),
+        let args = parts[2..].to_vec();
+        RESPCommand { command, args }
+    }
+    fn get_response(&self) -> String {
+        match self.command.as_str() {
+            "PING" => Self::ping(&self.args),
+            "ECHO" => Self::echo(&self.args),
             "COMMAND" => Self::command(),
-            _ => "UNIMPLEMENTED"
+            _ => "UNIMPLEMENTED".to_string()
         }
     }
 }

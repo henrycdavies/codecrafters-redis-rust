@@ -4,7 +4,7 @@ pub mod resp;
 pub mod pool;
 pub mod util;
 
-use std::{io::{Error, Read, Result, Write}, net::{TcpListener, TcpStream}, thread::sleep, time::Duration};
+use std::{io::{Error, Read, Result, Write}, net::{TcpListener, TcpStream}};
 
 use array::RESPArray;
 use pool::ThreadPool;
@@ -33,8 +33,8 @@ fn handle_stream(mut stream: TcpStream) -> Result<()> {
             println!("{}", part);
         }
         let response = match first_byte {
-            b'*' => RESPArray::get_response(&parts),
-            _ => "UNIMPLEMENTED"
+            b'*' => RESPArray::from_str_array(&parts).get_response(),
+            _ => "UNIMPLEMENTED".to_string()
         };
         if response == "UNIMPLEMENTED" {
             return Err(Error::new(std::io::ErrorKind::InvalidInput, "This function is not yet implemented"));
