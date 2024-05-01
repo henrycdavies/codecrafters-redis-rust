@@ -1,45 +1,46 @@
-pub mod array;
-pub mod command;
 pub mod resp;
 pub mod pool;
+pub mod store;
 pub mod util;
 
-use std::{io::{Error, Read, Result, Write}, net::{TcpListener, TcpStream}};
+use std::{io::{Error, ErrorKind, Read, Result, Write}, net::{TcpListener, TcpStream}, sync::Arc};
 
-use array::RESPArray;
+use resp::{command::CommandHandler, Array, Command, RESPDataType, COMMAND_INDICATOR};
 use pool::ThreadPool;
-use resp::RESPDataType;
-
-const CRLF: &str = "\r\n";
+use store::{create_key_value_store, KeyValueStore};
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
     let pool = ThreadPool::new(4);
+    let store = create_key_value_store();
     for stream in listener.incoming() {
         if let Ok(_stream) = stream {
+            let _store = Arc::clone(&store);
             pool.execute(|| {
-                handle_stream(_stream);
+                handle_stream(_stream, _store);
             });
         }
     }
 }
 
-fn handle_stream(mut stream: TcpStream) -> Result<()> {
+fn handle_stream(mut stream: TcpStream, store: KeyValueStore) -> Result<()> {
     let mut buf = [0; 512];
+    let command_handler = CommandHandler::new(store);
     while let Ok(_) = stream.read(&mut buf) {
-        let first_byte = &buf[0..1][0];
-        let parts = std::str::from_utf8(&buf).unwrap().split(CRLF).collect::<Vec<&str>>();
-        for part in &parts {
-            println!("{}", part);
-        }
-        let response = match first_byte {
-            b'*' => RESPArray::from_str_array(&parts).get_response(),
-            _ => "UNIMPLEMENTED".to_string()
+        let resp_array = match Array::from_bytes(&buf) {
+            Ok(x) => x,
+            Err(_) => return Err(Error::new(ErrorKind::InvalidInput, "Invalid message"))
         };
-        if response == "UNIMPLEMENTED" {
-            return Err(Error::new(std::io::ErrorKind::InvalidInput, "This function is not yet implemented"));
+        if resp_array.parts[0].indicator != COMMAND_INDICATOR {
+            return Err(Error::new(ErrorKind::InvalidInput, "Invalid input"));
         }
-        stream.write_all(response.as_bytes());
+        let command = Command::from_resp_array(&resp_array.parts);
+        if let Ok(response) = command_handler.execute(command) {
+            match stream.write_all(response.as_bytes()) {
+                Ok(_) => (),
+                Err(e) => return Err(e),
+            }
+        }
     }
     Ok(())
 }
