@@ -2,7 +2,7 @@ use std::io::{Error, ErrorKind, Result};
 
 use crate::util::validate_lengths;
 
-use super::{RESPDataType, Command, ARRAY_INDICATOR, CRLF};
+use super::{RESPDataType, ARRAY_INDICATOR, CRLF};
 
 #[derive(Clone)]
 pub struct RESPArrayElement<'a> {

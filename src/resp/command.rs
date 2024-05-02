@@ -1,6 +1,6 @@
-use std::{io::{Error, ErrorKind, Result}};
+use std::{env::Args, io::{Error, ErrorKind, Result}};
 use crate::{resp::{Nil, RESPDataType}, KeyValueStore};
-use super::{array::RESPArrayElement, BulkString, SimpleString};
+use super::{array::RESPArrayElement, BulkString, SimpleString, StoredValue};
 
 #[derive(Debug)]
 pub enum CommandName {
@@ -13,13 +13,17 @@ pub enum CommandName {
 
 impl CommandName {
     pub fn from(s: &str) -> Self {
-        match s {
+        let uppercased = s.to_uppercase();
+        match uppercased.as_str() {
             "PING" => CommandName::PING,
             "ECHO" => CommandName::ECHO,
             "COMMAND" => CommandName::COMMAND,
             "GET" => CommandName::GET,
             "SET" => CommandName::SET,
-            _ => unimplemented!()
+            _ => {
+                println!("Error encountered parsing command from string {}", s);
+                unimplemented!()
+            }
         }
     }
 }
@@ -40,11 +44,11 @@ impl<'a> Command<'a> {
 }
 
 pub struct CommandHandler {
-    store: KeyValueStore,
+    store: KeyValueStore<StoredValue>,
 }
 
 impl CommandHandler {
-    pub fn new(store: KeyValueStore) -> Self {
+    pub fn new(store: KeyValueStore<StoredValue>) -> Self {
         CommandHandler { store }
     }
 
@@ -66,19 +70,33 @@ impl CommandHandler {
 
     fn get(&self, command: Command) -> Result<String> {
         println!("GET");
-        let key = command.args[0].value;
+        let key = self.extract_key_or_err(&command, 0)?;
         let store = self.store.lock().unwrap();
-        let get_result = store.get(key);
+        let get_result = store.get(&key);
         match get_result {
-            Some(val) => SimpleString::new(val).into_response_str(),
+            Some(val) => {
+                if val.is_expired() {
+                    return Nil::new().into_response_str();
+                }
+                SimpleString::new(&val.value).into_response_str()
+            },
             _ => Nil::new().into_response_str(),
         }
     }
 
     fn set(&self, command: Command) -> Result<String> {
         println!("SET");
-        let key = command.args[0].value.to_string();
-        let val = command.args[1].value.to_string();
+        let key = self.extract_key_or_err(&command, 0)?;
+        let val = self.extract_key_or_err(&command, 1)?;
+        let val = match command.args.get(2) {
+            Some(arg) => {
+                let ttl: i64 = arg.value.parse().map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
+                StoredValue::new_with_ttl(&val, ttl)
+            },
+            None => {
+                StoredValue::new(command.args[1].value)
+            },
+        };
         self.store.lock().unwrap().insert(key, val);
         SimpleString::new("OK").into_response_str()
     }
@@ -91,6 +109,23 @@ impl CommandHandler {
             CommandName::SET => self.set(command),
             CommandName::GET => self.get(command),
             _ => Err(Error::new(ErrorKind::InvalidInput, "Invalid command")),
+        }
+    }
+
+    fn extract_key_or_err(&self, command: &Command, arg_index: usize) -> Result<String> {
+        if let Some(v) = command.args.get(arg_index) {
+            Ok(v.value.to_string())
+        } else {
+            let message = format!("Missing arg number {} for {:?} command.", arg_index, command.name);
+            return Err(Error::new(ErrorKind::InvalidInput, message))
+        }
+    }
+
+    fn extract_key_or_default(&self, command: Command, arg_index: usize, default: String) -> String {
+        if let Some(v) = command.args.get(arg_index) {
+            v.value.to_string()
+        } else {
+            default.to_string()
         }
     }
 }

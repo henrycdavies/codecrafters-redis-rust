@@ -5,14 +5,14 @@ pub mod util;
 
 use std::{io::{Error, ErrorKind, Read, Result, Write}, net::{TcpListener, TcpStream}, sync::Arc};
 
-use resp::{command::CommandHandler, Array, Command, RESPDataType, COMMAND_INDICATOR};
+use resp::{command::CommandHandler, Array, Command, RESPDataType, StoredValue, COMMAND_INDICATOR};
 use pool::ThreadPool;
 use store::{create_key_value_store, KeyValueStore};
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
     let pool = ThreadPool::new(4);
-    let store = create_key_value_store();
+    let store: KeyValueStore<StoredValue> = create_key_value_store();
     for stream in listener.incoming() {
         if let Ok(_stream) = stream {
             let _store = Arc::clone(&store);
@@ -23,7 +23,7 @@ fn main() {
     }
 }
 
-fn handle_stream(mut stream: TcpStream, store: KeyValueStore) -> Result<()> {
+fn handle_stream(mut stream: TcpStream, store: KeyValueStore<StoredValue>) -> Result<()> {
     let mut buf = [0; 512];
     let command_handler = CommandHandler::new(store);
     while let Ok(_) = stream.read(&mut buf) {

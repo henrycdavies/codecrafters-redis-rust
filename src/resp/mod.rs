@@ -5,6 +5,7 @@ pub use error::Error;
 pub use nil::Nil;
 pub use response::Response;
 pub use string::SimpleString;
+pub use value::StoredValue;
 
 pub mod array;
 pub mod bulk_string;
@@ -13,6 +14,7 @@ pub mod error;
 pub mod nil;
 pub mod response;
 pub mod string;
+pub mod value;
 
 use std::io::Result;
 
