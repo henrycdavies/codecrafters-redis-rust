@@ -34,13 +34,14 @@ fn handle_stream(mut stream: TcpStream, store: KeyValueStore<StoredValue>) -> Re
         if resp_array.parts[0].indicator != COMMAND_INDICATOR {
             return Err(Error::new(ErrorKind::InvalidInput, "Invalid input"));
         }
-        let command = Command::from_resp_array(&resp_array.parts);
-        if let Ok(response) = command_handler.execute(command) {
-            match stream.write_all(response.as_bytes()) {
-                Ok(_) => (),
-                Err(e) => return Err(e),
+        if let Ok(command) = Command::from_resp_array(&resp_array.parts) {
+            if let Ok(response) = command_handler.execute(command) {
+                match stream.write_all(response.as_bytes()) {
+                    Ok(_) => (),
+                    Err(e) => return Err(e),
+                }
             }
-        }
+        };
     }
     Ok(())
 }

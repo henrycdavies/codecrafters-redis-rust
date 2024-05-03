@@ -9,10 +9,10 @@ pub use value::StoredValue;
 
 pub mod array;
 pub mod bulk_string;
-pub mod command;
 pub mod error;
 pub mod nil;
 pub mod response;
+pub mod command;
 pub mod string;
 pub mod value;
 
