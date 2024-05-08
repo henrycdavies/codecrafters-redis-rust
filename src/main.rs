@@ -1,3 +1,4 @@
+pub mod args;
 pub mod resp;
 pub mod pool;
 pub mod store;
@@ -5,12 +6,16 @@ pub mod util;
 
 use std::{io::{Error, ErrorKind, Read, Result, Write}, net::{TcpListener, TcpStream}, sync::Arc};
 
+use args::Args;
 use resp::{command::CommandHandler, Array, Command, RESPDataType, StoredValue, COMMAND_INDICATOR};
 use pool::ThreadPool;
 use store::{create_key_value_store, KeyValueStore};
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
+    let args = Args::from_env();
+    let addr = format!("127.0.0.1:{}", args.port);
+    println!("Listening on {}", addr);
+    let listener = TcpListener::bind(addr).unwrap();
     let pool = ThreadPool::new(4);
     let store: KeyValueStore<StoredValue> = create_key_value_store();
     for stream in listener.incoming() {
