@@ -13,8 +13,6 @@ use pool::ThreadPool;
 use server::Info;
 use store::{create_key_value_store, KeyValueStore};
 
-use crate::server::{ReplicationInfo, ReplicationRole};
-
 fn main() {
     let args = Args::from_env();
     let addr = format!("127.0.0.1:{}", args.port);
@@ -22,7 +20,7 @@ fn main() {
     let listener = TcpListener::bind(addr).unwrap();
     let pool = ThreadPool::new(4);
     let store: KeyValueStore<StoredValue> = create_key_value_store();
-    let server_info = Arc::new(Info::new());
+    let server_info = Arc::new(Info::new(args));
     for stream in listener.incoming() {
         if let Ok(_stream) = stream {
             let _server_info = Arc::clone(&server_info);

@@ -1,4 +1,4 @@
-use crate::resp::{Error, RESPDataType};
+use crate::{args::Args, resp::{Error, RESPDataType}};
 
 #[derive(Debug)]
 pub enum ReplicationRole {
@@ -28,16 +28,15 @@ pub struct ReplicationInfo {
 }
 
 impl ReplicationInfo {
-    pub fn new() -> Self {
-        ReplicationInfo { role: ReplicationRole::from_str("master") }
+    pub fn new(args: Args) -> Self {
+        let role = args.role;
+        ReplicationInfo { role }
     }
 
     pub fn to_string(&self) -> String {
-        let stri = format!(
+        format!(
 r#"{}"#,
-        self.role.to_string());
-        println!("{}", stri);
-        stri
+        self.role.to_string())
     }
 }
 
@@ -47,8 +46,8 @@ pub struct Info {
 }
 
 impl Info {
-    pub fn new() -> Self {
-        let replication_info = ReplicationInfo::new();
+    pub fn new(args: Args) -> Self {
+        let replication_info = ReplicationInfo::new(args);
         Info { replication: replication_info }
     }
 
