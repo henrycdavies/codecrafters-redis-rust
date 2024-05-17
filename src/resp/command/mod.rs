@@ -1,13 +1,14 @@
 pub mod echo;
 pub mod get;
+pub mod info;
 pub mod ping;
 pub mod set;
 
-use std::{collections::HashMap, io::{Error, ErrorKind, Result}, sync::MutexGuard};
-use crate::{resp::RESPDataType, KeyValueStore};
-use self::{echo::EchoCommand, get::GetCommand, ping::PingCommand, set::SetCommand};
+use std::{collections::HashMap, io::{Error, ErrorKind, Result}, sync::{Arc, MutexGuard}};
+use crate::{resp::RESPDataType, server::Info, KeyValueStore};
+use self::{echo::EchoCommand, get::GetCommand, info::InfoCommand, ping::PingCommand, set::SetCommand};
 
-use super::{array::RESPArrayElement, SimpleString, StoredValue};
+use super::{array::RESPArrayElement, error, SimpleString, StoredValue};
 
 trait BaseCommand: Sized {
     fn from_resp_array(arr: &Vec<RESPArrayElement>) -> Result<Self>;
@@ -19,7 +20,10 @@ trait StoringCommand: Sized {
     fn execute(&self, store: MutexGuard<HashMap<String, StoredValue>>) -> Result<String>;
 }
 
-
+trait AdministrativeCommand: Sized {
+    fn from_resp_array(arr: &Vec<RESPArrayElement>) -> Result<Self>;
+    fn execute(&self, server_info: Arc<Info>) -> Result<String>;
+}
 
 #[derive(Debug)]
 pub struct CommandCommand;
@@ -29,17 +33,17 @@ impl BaseCommand for CommandCommand {
         Ok(Self { })
     }
     fn execute(&self) -> Result<String> {
-        println!("COMMAND");
-        SimpleString::new("COMMAND").into_response_str()
+        Ok(SimpleString::new("OK").into_response_str())
     }
 }
 
 #[derive(Debug)]
 pub enum Command {
-    Ping(PingCommand),
-    Echo(EchoCommand),
     Command(CommandCommand),
+    Echo(EchoCommand),
     Get(GetCommand),
+    Info(InfoCommand),
+    Ping(PingCommand),
     Set(SetCommand),
 }
 
@@ -72,6 +76,12 @@ impl Command {
                     _ => Err(Error::new(ErrorKind::InvalidInput, "Invalid input for command."))
                 
             },
+            "INFO" =>
+                match InfoCommand::from_resp_array(arr) {
+                    Ok(cmd) => Ok(Command::Info(cmd)),
+                    _ => Err(Error::new(ErrorKind::InvalidInput, "Invalid input for command."))
+                
+            },
             "SET" =>
                 match SetCommand::from_resp_array(arr) {
                     Ok(cmd) => Ok(Command::Set(cmd)),
@@ -88,21 +98,28 @@ impl Command {
 
 pub struct CommandHandler {
     store: KeyValueStore<StoredValue>,
+    server_info: Arc<Info>,
 }
 
 impl CommandHandler {
-    pub fn new(store: KeyValueStore<StoredValue>) -> Self {
-        CommandHandler { store }
+    pub fn new(store: KeyValueStore<StoredValue>, server_info: Arc<Info>) -> Self {
+        CommandHandler { store, server_info }
     }
 
-    pub fn execute(&self, command: Command) -> Result<String> {
+    pub fn execute(&self, command: Command) -> String {
         let _store = self.store.lock().unwrap();
-        match command {
-            Command::Echo(cmd) => cmd.execute(),
+        let _server_info = self.server_info.clone();
+        let exec_result = match command {
             Command::Command(cmd) => cmd.execute(),
+            Command::Echo(cmd) => cmd.execute(),
+            Command::Get(cmd) => cmd.execute(_store),
+            Command::Info(cmd) => cmd.execute(_server_info),
             Command::Ping(cmd) => cmd.execute(),
             Command::Set(cmd) => cmd.execute(_store),
-            Command::Get(cmd) => cmd.execute(_store),
+        };
+        match exec_result {
+            Ok(response_str) => response_str,
+            _ => error::Error::new("ERR unexpected error.").into_response_str(),
         }
     }
 }

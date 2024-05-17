@@ -14,8 +14,8 @@ impl SimpleString {
 }
 
 impl<'a> RESPDataType<'a> for SimpleString {
-    fn into_response_str(&self) -> Result<String> {
-        Ok(self.value.to_string())
+    fn into_response_str(&self) -> String {
+        self.value.to_string()
     }
 
     fn from_bytes(bytes: &'a [u8]) -> Result<Box<Self>> {

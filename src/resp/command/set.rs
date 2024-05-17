@@ -34,7 +34,6 @@ impl StoringCommand for SetCommand {
         Ok(Self { key, value, px })
     }
     fn execute(&self, mut store: MutexGuard<HashMap<String, StoredValue>>) -> Result<String> {
-        println!("SET");
         let key = &self.key;
         let val = match self.px {
             Some(px) => {
@@ -46,6 +45,6 @@ impl StoringCommand for SetCommand {
             },
         };
         store.insert(key.to_string(), val);
-        SimpleString::new("OK").into_response_str()
+        Ok(SimpleString::new("OK").into_response_str())
     }
 }

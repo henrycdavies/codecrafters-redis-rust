@@ -17,7 +17,6 @@ impl BaseCommand for EchoCommand {
         }
     }
     fn execute(&self) -> Result<String> {
-        println!("ECHO");
-        BulkString::new(&self.value).into_response_str()
+        Ok(BulkString::new(&self.value).into_response_str())
     }
 }

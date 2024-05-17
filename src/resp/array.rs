@@ -4,7 +4,7 @@ use crate::util::validate_lengths;
 
 use super::{RESPDataType, ARRAY_INDICATOR, CRLF};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RESPArrayElement<'a> {
     pub indicator: u8,
     pub size: usize,
@@ -66,7 +66,7 @@ impl<'a> RESPDataType<'a> for Array<'a> {
         }        
     }
 
-    fn into_response_str(&self) -> Result<String> {
+    fn into_response_str(&self) -> String {
         unimplemented!()
     }
 }

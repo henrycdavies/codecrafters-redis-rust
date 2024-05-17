@@ -17,9 +17,8 @@ impl<'a> BulkString<'a> {
 }
 
 impl<'a> RESPDataType<'a> for BulkString<'a> {
-    fn into_response_str(&'a self) -> Result<String> {
-        let msg = format!("${}\r\n{}\r\n", self.size, self.value);
-        Ok(msg)
+    fn into_response_str(&'a self) -> String {
+        format!("${}\r\n{}\r\n", self.size, self.value)
     }
 
     fn from_bytes(bytes: &'a [u8]) -> Result<Box<Self>> {

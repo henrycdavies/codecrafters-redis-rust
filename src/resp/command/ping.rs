@@ -13,7 +13,6 @@ impl BaseCommand for PingCommand {
         Ok(Self { })
     }
     fn execute(&self) -> Result<String> {
-        println!("PING");
-        SimpleString::new("PONG").into_response_str()
+        Ok(SimpleString::new("PONG").into_response_str())
     }
 }

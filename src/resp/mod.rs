@@ -20,7 +20,7 @@ use std::io::Result;
 
 pub trait RESPDataType<'a> {
     fn from_bytes(bytes: &'a [u8]) -> Result<Box<Self>>;
-    fn into_response_str(&'a self) -> Result<String>;
+    fn into_response_str(&'a self) -> String;
 }
 
 pub trait Bulk<'a>: RESPDataType<'a> {
