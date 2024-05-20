@@ -1,5 +1,3 @@
-use std::io::Result;
-
 use super::RESPDataType;
 
 pub struct Nil {
@@ -17,9 +15,4 @@ impl<'a> RESPDataType<'a> for Nil {
     fn into_response_str(&self) -> String {
         self.value.to_string()
     }
-
-    fn from_bytes(bytes: &'a [u8]) -> Result<Box<Self>> {
-        unimplemented!()
-    }
-
 }

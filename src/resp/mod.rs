@@ -16,10 +16,7 @@ pub mod command;
 pub mod string;
 pub mod value;
 
-use std::io::Result;
-
 pub trait RESPDataType<'a> {
-    fn from_bytes(bytes: &'a [u8]) -> Result<Box<Self>>;
     fn into_response_str(&'a self) -> String;
 }
 

@@ -44,11 +44,8 @@ impl<'a> Array<'a> {
     fn from_resp_array(arr: Vec<RESPArrayElement<'a>>) -> Self {
         Array { size: arr.len(), parts: arr }
     }
-}
 
-
-impl<'a> RESPDataType<'a> for Array<'a> {
-    fn from_bytes(bytes: &'a [u8]) -> Result<Box<Self>> {
+    pub fn from_bytes(bytes: &'a [u8]) -> Result<Box<Self>> {
         let first_byte = &bytes[0..1][0];
         if *first_byte != ARRAY_INDICATOR {
             return Err(Error::new(std::io::ErrorKind::InvalidInput, "Invalid input"));
@@ -65,7 +62,10 @@ impl<'a> RESPDataType<'a> for Array<'a> {
                 Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
         }        
     }
+}
 
+
+impl<'a> RESPDataType<'a> for Array<'a> {
     fn into_response_str(&self) -> String {
         unimplemented!()
     }

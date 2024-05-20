@@ -1,44 +1,10 @@
+pub mod replication;
+
+pub use replication::ReplicationRole;
+
 use crate::{args::Args, resp::{Error, RESPDataType}};
 
-#[derive(Debug)]
-pub enum ReplicationRole {
-    Master,
-    Slave,
-}
-
-impl ReplicationRole {
-    pub fn from_str(role: &str) -> Self {
-        match role {
-            "role:slave" => ReplicationRole::Slave,
-            _ => ReplicationRole::Master,
-        }
-    }
-
-    pub fn to_string(&self) -> String {
-        match self {
-            ReplicationRole::Master => "role:master".to_string(),
-            ReplicationRole::Slave => "role:slave".to_string(),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct ReplicationInfo {
-    pub role: ReplicationRole,
-}
-
-impl ReplicationInfo {
-    pub fn new(args: Args) -> Self {
-        let role = args.role;
-        ReplicationInfo { role }
-    }
-
-    pub fn to_string(&self) -> String {
-        format!(
-r#"{}"#,
-        self.role.to_string())
-    }
-}
+use self::replication::ReplicationInfo;
 
 #[derive(Debug)]
 pub struct Info {
