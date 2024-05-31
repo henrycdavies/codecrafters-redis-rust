@@ -2,6 +2,7 @@ use std::env;
 
 use crate::server::ReplicationRole;
 
+#[derive(Clone, Debug)]
 pub struct SlaveArgs {
     pub master_host: String,
     pub master_port: i16,

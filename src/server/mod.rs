@@ -12,7 +12,7 @@ pub struct Info {
 }
 
 impl Info {
-    pub fn new(args: Args) -> Self {
+    pub fn new(args: &Args) -> Self {
         let replication_info = ReplicationInfo::new(args);
         Info { replication: replication_info }
     }

@@ -41,7 +41,7 @@ pub struct Array<'a> {
 }
 
 impl<'a> Array<'a> {
-    fn from_resp_array(arr: Vec<RESPArrayElement<'a>>) -> Self {
+    pub fn from_resp_array(arr: Vec<RESPArrayElement<'a>>) -> Self {
         Array { size: arr.len(), parts: arr }
     }
 
@@ -55,12 +55,29 @@ impl<'a> Array<'a> {
                 let parts: Vec<&str> = v.split(CRLF).collect();
                 let elements = parts[1..].to_vec();
                 let arr = RESPArrayElement::from_str_vec(elements).unwrap_or_default();
-                validate_lengths(parts[0], arr.len());
+                if let Err(_) = validate_lengths(parts[0], arr.len()) {
+                    return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid data"));                };
                 Ok(Box::new(Array::from_resp_array(arr)))
             },
             Err(e) => 
                 Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
         }        
+    }
+
+    pub fn into_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        let crlf_as_bytes = CRLF.as_bytes();
+        bytes.push(ARRAY_INDICATOR);
+        bytes.extend_from_slice(self.size.to_string().as_bytes());
+        bytes.extend_from_slice(crlf_as_bytes);
+        for part in &self.parts {
+            bytes.push(part.indicator);
+            bytes.extend_from_slice(part.size.to_string().as_bytes());
+            bytes.extend_from_slice(crlf_as_bytes);
+            bytes.extend_from_slice(part.value.as_bytes());
+            bytes.extend_from_slice(crlf_as_bytes);
+        }
+        bytes
     }
 }
 

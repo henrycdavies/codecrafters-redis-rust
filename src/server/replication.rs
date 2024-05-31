@@ -1,6 +1,6 @@
 use crate::args::Args;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum ReplicationRole {
     Master,
     Slave,
@@ -30,7 +30,7 @@ pub struct ReplicationInfo {
 }
 
 impl ReplicationInfo {
-    pub fn new(args: Args) -> Self {
+    pub fn new(args: &Args) -> Self {
         let role = args.role;
         ReplicationInfo { role, master_replid: "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb".to_string(), master_repl_offset: 0 }
     }

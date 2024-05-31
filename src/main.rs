@@ -2,6 +2,7 @@ pub mod args;
 pub mod resp;
 pub mod pool;
 pub mod server;
+pub mod slave;
 pub mod store;
 pub mod util;
 
@@ -11,16 +12,21 @@ use args::Args;
 use resp::{command::CommandHandler, Array, Command, RESPDataType, StoredValue, COMMAND_INDICATOR};
 use pool::ThreadPool;
 use server::Info;
+use slave::Slave;
 use store::{create_key_value_store, KeyValueStore};
 
 fn main() {
-    let args = Args::from_env();
+    let args = Arc::new(Args::from_env());
     let addr = format!("127.0.0.1:{}", args.port);
     println!("Listening on {}", addr);
     let listener = TcpListener::bind(addr).unwrap();
     let pool = ThreadPool::new(4);
     let store: KeyValueStore<StoredValue> = create_key_value_store();
-    let server_info = Arc::new(Info::new(args));
+    let server_info = Arc::new(Info::new(args.clone().as_ref()));
+    let slave_info = &args.clone().slave_args;
+    if let Some(args) = slave_info {
+        Slave::new(args);
+    }
     for stream in listener.incoming() {
         if let Ok(_stream) = stream {
             let _server_info = Arc::clone(&server_info);
